@@ -21,7 +21,7 @@ class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
   # the executables.
 
   def install(options = {})
-    require_relative '../installer'
+    require 'rubygems/installer'
 
     installer = Gem::Installer.for_spec spec, options
 

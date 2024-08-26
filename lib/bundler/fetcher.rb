@@ -28,8 +28,7 @@ module Bundler
           " is a chance you are experiencing a man-in-the-middle attack, but" \
           " most likely your system doesn't have the CA certificates needed" \
           " for verification. For information about OpenSSL certificates, see" \
-          " https://railsapps.github.io/openssl-certificate-verify-failed.html." \
-          " To connect without using SSL, edit your Gemfile" \
+          " http://bit.ly/ruby-ssl. To connect without using SSL, edit your Gemfile" \
           " sources and change 'https' to 'http'."
       end
     end

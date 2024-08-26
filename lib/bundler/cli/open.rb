@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "shellwords"
+
 module Bundler
   class CLI::Open
     attr_reader :options, :name
@@ -17,7 +19,6 @@ module Bundler
       else
         path = spec.full_gem_path
         Dir.chdir(path) do
-          require "shellwords"
           command = Shellwords.split(editor) + [path]
           Bundler.with_original_env do
             system(*command)

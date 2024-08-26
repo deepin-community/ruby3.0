@@ -43,10 +43,12 @@ RSpec.describe Bundler::RubygemsIntegration do
 
   describe "#download_gem" do
     let(:bundler_retry) { double(Bundler::Retry) }
-    let(:uri) { Bundler::URI.parse("https://foo.bar") }
-    let(:cache_dir) { "#{Gem.path.first}/cache" }
+    let(:retry) { double("Bundler::Retry") }
+    let(:uri) {  Bundler::URI.parse("https://foo.bar") }
+    let(:path) { Gem.path.first }
     let(:spec) do
-      spec = Gem::Specification.new("Foo", Gem::Version.new("2.5.2"))
+      spec = Bundler::RemoteSpecification.new("Foo", Gem::Version.new("2.5.2"),
+        Gem::Platform::RUBY, nil)
       spec.remote = Bundler::Source::Rubygems::Remote.new(uri.to_s)
       spec
     end
@@ -58,9 +60,9 @@ RSpec.describe Bundler::RubygemsIntegration do
       expect(Bundler::Retry).to receive(:new).with("download gem from #{uri}/").
         and_return(bundler_retry)
       expect(bundler_retry).to receive(:attempts).and_yield
-      expect(fetcher).to receive(:cache_update_path)
+      expect(fetcher).to receive(:download).with(spec, uri, path)
 
-      Bundler.rubygems.download_gem(spec, uri, cache_dir)
+      Bundler.rubygems.download_gem(spec, uri, path)
     end
   end
 

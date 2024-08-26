@@ -446,15 +446,6 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
-  def test_each_byte_closed
-    f = StringIO.new("1234")
-    assert_equal("1".ord, f.each_byte {|c| f.close; break c })
-    f = StringIO.new("1234")
-    assert_raise(IOError) do
-      f.each_byte { f.close }
-    end
-  end
-
   def test_getbyte
     f = StringIO.new("1234")
     assert_equal("1".ord, f.getbyte)
@@ -529,27 +520,9 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(%w(1 2 3 4), f.each_char.to_a)
   end
 
-  def test_each_char_closed
-    f = StringIO.new("1234")
-    assert_equal("1", f.each_char {|c| f.close; break c })
-    f = StringIO.new("1234")
-    assert_raise(IOError) do
-      f.each_char { f.close }
-    end
-  end
-
   def test_each_codepoint
     f = StringIO.new("1234")
     assert_equal([49, 50, 51, 52], f.each_codepoint.to_a)
-  end
-
-  def test_each_codepoint_closed
-    f = StringIO.new("1234")
-    assert_equal("1".ord, f.each_codepoint {|c| f.close; break c })
-    f = StringIO.new("1234")
-    assert_raise(IOError) do
-      f.each_codepoint { f.close }
-    end
   end
 
   def test_each_codepoint_enumerator
@@ -825,7 +798,7 @@ class TestStringIO < Test::Unit::TestCase
   end
 
   def test_overflow
-    omit if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
+    skip if RbConfig::SIZEOF["void*"] > RbConfig::SIZEOF["long"]
     limit = RbConfig::LIMITS["INTPTR_MAX"] - 0x10
     assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
@@ -835,7 +808,7 @@ class TestStringIO < Test::Unit::TestCase
         x = "a"*0x100000
         break if [x].pack("p").unpack("i!")[0] < 0
         ary << x
-        omit if ary.size > 100
+        skip if ary.size > 100
       end
       s = StringIO.new(x)
       s.gets("xxx", limit)

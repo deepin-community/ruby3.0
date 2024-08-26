@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../query_utils'
+require 'rubygems/command'
+require 'rubygems/query_utils'
 
 ##
 # Searches for gems starting with the supplied argument.

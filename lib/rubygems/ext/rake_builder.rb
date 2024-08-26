@@ -5,6 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
+require "shellwords"
+
 class Gem::Ext::RakeBuilder < Gem::Ext::Builder
   def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd)
     if File.basename(extension) =~ /mkrf_conf/i
@@ -14,7 +16,6 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
     rake = ENV['rake']
 
     if rake
-      require "shellwords"
       rake = rake.shellsplit
     else
       begin

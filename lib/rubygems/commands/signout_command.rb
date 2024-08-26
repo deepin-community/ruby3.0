@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative '../command'
+require 'rubygems/command'
 
 class Gem::Commands::SignoutCommand < Gem::Command
   def initialize

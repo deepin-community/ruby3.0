@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'deprecate'
+require 'rubygems/deprecate'
 
 ##
 # This module contains various utility methods as module methods.

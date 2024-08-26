@@ -76,7 +76,7 @@ module Bundler
         tag_version { git_push(args[:remote]) } unless already_tagged?
       end
 
-      task "release:rubygem_push" => "build" do
+      task "release:rubygem_push" do
         rubygem_push(built_gem_path) if gem_push?
       end
 
@@ -98,7 +98,10 @@ module Bundler
       built_gem_path ||= build_gem
       cmd = [*gem_command, "install", built_gem_path.to_s]
       cmd << "--local" if local
-      sh(cmd)
+      _, status = sh_with_status(cmd)
+      unless status.success?
+        raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output"
+      end
       Bundler.ui.confirm "#{name} (#{version}) installed."
     end
 
@@ -107,7 +110,7 @@ module Bundler
       SharedHelpers.filesystem_access(File.join(base, "checksums")) {|p| FileUtils.mkdir_p(p) }
       file_name = "#{File.basename(built_gem_path)}.sha512"
       require "digest/sha2"
-      checksum = ::Digest::SHA512.new.hexdigest(built_gem_path.to_s)
+      checksum = Digest::SHA512.new.hexdigest(built_gem_path.to_s)
       target = File.join(base, "checksums", file_name)
       File.write(target, checksum)
       Bundler.ui.confirm "#{name} #{version} checksum written to checksums/#{file_name}."
@@ -129,8 +132,8 @@ module Bundler
 
     def git_push(remote = nil)
       remote ||= default_remote
-      sh("git push #{remote} refs/heads/#{current_branch}".shellsplit)
-      sh("git push #{remote} refs/tags/#{version_tag}".shellsplit)
+      perform_git_push "#{remote} refs/heads/#{current_branch}"
+      perform_git_push "#{remote} refs/tags/#{version_tag}"
       Bundler.ui.confirm "Pushed git commits and release tag."
     end
 
@@ -156,6 +159,13 @@ module Bundler
         env_rubygems_host && env_rubygems_host.empty?
 
       allowed_push_host || env_rubygems_host || "rubygems.org"
+    end
+
+    def perform_git_push(options = "")
+      cmd = "git push #{options}"
+      out, status = sh_with_status(cmd.shellsplit)
+      return if status.success?
+      raise "Couldn't git push. `#{cmd}' failed with the following output:\n\n#{out}\n"
     end
 
     def already_tagged?
@@ -208,7 +218,8 @@ module Bundler
     def sh(cmd, &block)
       out, status = sh_with_status(cmd, &block)
       unless status.success?
-        raise("Running `#{cmd.shelljoin}` failed with the following output:\n\n#{out}\n")
+        cmd = cmd.shelljoin if cmd.respond_to?(:shelljoin)
+        raise(out.empty? ? "Running `#{cmd}` failed. Run this command directly for more detailed output." : out)
       end
       out
     end

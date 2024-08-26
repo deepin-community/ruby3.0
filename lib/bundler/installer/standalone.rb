@@ -3,7 +3,7 @@
 module Bundler
   class Standalone
     def initialize(groups, definition)
-      @specs = definition.specs_for(groups)
+      @specs = groups.empty? ? definition.requested_specs : definition.specs_for(groups.map(&:to_sym))
     end
 
     def generate
@@ -12,13 +12,12 @@ module Bundler
       end
       File.open File.join(bundler_path, "setup.rb"), "w" do |file|
         file.puts "require 'rbconfig'"
+        file.puts "ruby_engine = RUBY_ENGINE"
+        file.puts "ruby_version = RbConfig::CONFIG[\"ruby_version\"]"
+        file.puts "path = File.expand_path('..', __FILE__)"
         file.puts reverse_rubygems_kernel_mixin
         paths.each do |path|
-          if Pathname.new(path).absolute?
-            file.puts %($:.unshift "#{path}")
-          else
-            file.puts %($:.unshift File.expand_path("\#{__dir__}/#{path}"))
-          end
+          file.puts %($:.unshift File.expand_path("\#{path}/#{path}"))
         end
       end
     end
@@ -29,14 +28,14 @@ module Bundler
       @specs.map do |spec|
         next if spec.name == "bundler"
         Array(spec.require_paths).map do |path|
-          gem_path(path, spec).sub(version_dir, '#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}')
+          gem_path(path, spec).sub(version_dir, '#{ruby_engine}/#{ruby_version}')
           # This is a static string intentionally. It's interpolated at a later time.
         end
-      end.flatten.compact
+      end.flatten
     end
 
     def version_dir
-      "#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}"
+      "#{Bundler::RubyVersion.system.engine}/#{RbConfig::CONFIG["ruby_version"]}"
     end
 
     def bundler_path
@@ -45,11 +44,7 @@ module Bundler
 
     def gem_path(path, spec)
       full_path = Pathname.new(path).absolute? ? path : File.join(spec.full_gem_path, path)
-      if spec.source.instance_of?(Source::Path)
-        full_path
-      else
-        Pathname.new(full_path).relative_path_from(Bundler.root.join(bundler_path)).to_s
-      end
+      Pathname.new(full_path).relative_path_from(Bundler.root.join(bundler_path)).to_s
     rescue TypeError
       error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
       raise Gem::InvalidSpecificationException.new(error_message)

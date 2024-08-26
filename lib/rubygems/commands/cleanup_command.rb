@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../dependency_list'
-require_relative '../uninstaller'
+require 'rubygems/command'
+require 'rubygems/dependency_list'
+require 'rubygems/uninstaller'
 
 class Gem::Commands::CleanupCommand < Gem::Command
   def initialize

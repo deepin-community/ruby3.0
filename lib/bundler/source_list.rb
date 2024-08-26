@@ -37,10 +37,6 @@ module Bundler
       global_rubygems_source.multiple_remotes?
     end
 
-    def implicit_global_source?
-      global_rubygems_source.no_remotes?
-    end
-
     def add_path_source(options = {})
       if options["gemspec"]
         add_source_to_list Source::Gemspec.new(options), path_sources
@@ -121,8 +117,7 @@ module Bundler
     def replace_sources!(replacement_sources)
       return false if replacement_sources.empty?
 
-      @rubygems_sources, @path_sources, @git_sources, @plugin_sources = map_sources(replacement_sources)
-      @global_rubygems_source = global_replacement_source(replacement_sources)
+      @path_sources, @git_sources, @plugin_sources = map_sources(replacement_sources)
 
       different_sources?(lock_sources, replacement_sources)
     end
@@ -157,19 +152,11 @@ module Bundler
     end
 
     def map_sources(replacement_sources)
-      [@rubygems_sources, @path_sources, @git_sources, @plugin_sources].map do |sources|
+      [path_sources, git_sources, plugin_sources].map do |sources|
         sources.map do |source|
           replacement_sources.find {|s| s == source } || source
         end
       end
-    end
-
-    def global_replacement_source(replacement_sources)
-      replacement_source = replacement_sources.find {|s| s == global_rubygems_source }
-      return global_rubygems_source unless replacement_source
-
-      replacement_source.local!
-      replacement_source
     end
 
     def different_sources?(lock_sources, replacement_sources)
@@ -215,7 +202,7 @@ module Bundler
     end
 
     def equal_source?(source, other_source)
-      return source.include?(other_source) if source.is_a?(Source::Rubygems) && other_source.is_a?(Source::Rubygems)
+      return source.include?(other_source) if source.is_a?(Source::Rubygems) && other_source.is_a?(Source::Rubygems) && !merged_gem_lockfile_sections?
 
       source == other_source
     end

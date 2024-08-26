@@ -3,7 +3,7 @@ require 'test/unit'
 
 class TestStringScannerRactor < Test::Unit::TestCase
   def setup
-    pend unless defined? Ractor
+    skip unless defined? Ractor
   end
 
   def test_ractor

@@ -16,10 +16,6 @@ module Bundler
         @index
       end
 
-      def to_err
-        to_s
-      end
-
       def to_s
         "any of the sources"
       end

@@ -52,6 +52,9 @@ module DebugSystem
     ret
   end
 end
+module Kernel
+  prepend(DebugSystem)
+end
 
 class VCS
   prepend(DebugSystem) if defined?(DebugSystem)

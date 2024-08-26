@@ -237,7 +237,7 @@ static bool vm_stack_canary_was_born = false;
 
 #ifndef MJIT_HEADER
 MJIT_FUNC_EXPORTED void
-rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
+vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
     const struct rb_control_frame_struct *reg_cfp = ec->cfp;
     const struct rb_iseq_struct *iseq;
@@ -284,7 +284,6 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     rb_bug("see above.");
 }
 #endif
-#define vm_check_canary(ec, sp) rb_vm_check_canary(ec, sp)
 
 #else
 #define vm_check_canary(ec, sp)
@@ -1806,8 +1805,7 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(vm_cc_class_check(cc, klass))) {
-        const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
-        if (LIKELY(cme && !METHOD_ENTRY_INVALIDATED(cme))) {
+        if (LIKELY(!METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)))) {
             VM_ASSERT(callable_method_entry_p(vm_cc_cme(cc)));
             RB_DEBUG_COUNTER_INC(mc_inline_hit);
             VM_ASSERT(vm_cc_cme(cc) == NULL ||                        // not found
@@ -5379,7 +5377,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 
 #if VM_CHECK_MODE > 0
 NORETURN( NOINLINE( COLDFUNC
-void rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
+void vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
 
 void
 Init_vm_stack_canary(void)
@@ -5394,7 +5392,7 @@ Init_vm_stack_canary(void)
 
 #ifndef MJIT_HEADER
 MJIT_FUNC_EXPORTED void
-rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
+vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
 {
     /* Because a method has already been called, why not call
      * another one. */

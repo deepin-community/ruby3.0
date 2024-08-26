@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'package'
-require_relative 'installer'
+require 'rubygems/package'
+require 'rubygems/installer'
 
 ##
 # Validator performs various gem file and gem database validation

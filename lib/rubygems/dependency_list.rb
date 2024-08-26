@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'tsort'
-require_relative 'deprecate'
+require 'tsort'
+require 'rubygems/deprecate'
 
 ##
 # Gem::DependencyList is used for installing and uninstalling gems in the
@@ -20,7 +20,7 @@ class Gem::DependencyList
   attr_reader :specs
 
   include Enumerable
-  include Gem::TSort
+  include TSort
 
   ##
   # Allows enabling/disabling use of development dependencies

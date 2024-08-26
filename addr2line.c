@@ -437,8 +437,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    addr += a;
 	    break;
 	case DW_LNS_fixed_advance_pc:
-	    a = *(uint16_t *)p;
-	    p += sizeof(uint16_t);
+	    a = *(unsigned char *)p++;
 	    addr += a;
 	    break;
 	case DW_LNS_set_prologue_end:
@@ -1626,7 +1625,6 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
 static unsigned long
 uncompress_debug_section(ElfW(Shdr) *shdr, char *file, char **ptr)
 {
-    *ptr = NULL;
 #ifdef SUPPORT_COMPRESSED_DEBUG_LINE
     ElfW(Chdr) *chdr = (ElfW(Chdr) *)(file + shdr->sh_offset);
     unsigned long destsize = chdr->ch_size;
@@ -1647,7 +1645,6 @@ uncompress_debug_section(ElfW(Shdr) *shdr, char *file, char **ptr)
 
 fail:
     free(*ptr);
-    *ptr = NULL;
 #endif
     return 0;
 }

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "shellwords"
+
 module Bundler
   class Source
     class Git
@@ -56,6 +58,7 @@ module Bundler
           @ref      = ref
           @revision = revision
           @git      = git
+          raise GitNotInstalledError.new if allow? && !Bundler.git_present?
         end
 
         def revision
@@ -207,11 +210,7 @@ module Bundler
         end
 
         def allow?
-          allowed = @git ? @git.allow_git_ops? : true
-
-          raise GitNotInstalledError.new if allowed && !Bundler.git_present?
-
-          allowed
+          @git ? @git.allow_git_ops? : true
         end
 
         def with_path(&blk)
@@ -225,7 +224,6 @@ module Bundler
         end
 
         def check_allowed(command)
-          require "shellwords"
           command_with_no_credentials = URICredentialsFilter.credential_filtered_string("git #{command.shelljoin}", uri)
           raise GitNotAllowedError.new(command_with_no_credentials) unless allow?
           command_with_no_credentials

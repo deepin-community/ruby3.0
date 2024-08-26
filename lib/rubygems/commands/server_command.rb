@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../server'
-require_relative '../deprecate'
+require 'rubygems/command'
+require 'rubygems/server'
+require 'rubygems/deprecate'
 
 class Gem::Commands::ServerCommand < Gem::Command
   extend Gem::Deprecate
@@ -11,10 +11,10 @@ class Gem::Commands::ServerCommand < Gem::Command
     super 'server', 'Documentation and gem repository HTTP server',
           :port => 8808, :gemdir => [], :daemon => false
 
-    Gem::OptionParser.accept :Port do |port|
+    OptionParser.accept :Port do |port|
       if port =~ /\A\d+\z/
         port = Integer port
-        raise Gem::OptionParser::InvalidArgument, "#{port}: not a port number" if
+        raise OptionParser::InvalidArgument, "#{port}: not a port number" if
           port > 65535
 
         port
@@ -22,7 +22,7 @@ class Gem::Commands::ServerCommand < Gem::Command
         begin
           Socket.getservbyname port
         rescue SocketError
-          raise Gem::OptionParser::InvalidArgument, "#{port}: no such named service"
+          raise OptionParser::InvalidArgument, "#{port}: no such named service"
         end
       end
     end

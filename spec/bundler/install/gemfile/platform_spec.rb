@@ -128,7 +128,7 @@ RSpec.describe "bundle install across platforms" do
       gem "pry"
     G
 
-    expect(lockfile).to eq <<~L
+    lockfile_should_be <<-L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -156,7 +156,7 @@ RSpec.describe "bundle install across platforms" do
 
     bundle "lock --add-platform ruby"
 
-    good_lockfile = <<~L
+    good_lockfile = strip_whitespace(<<-L)
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -186,9 +186,9 @@ RSpec.describe "bundle install across platforms" do
          #{Bundler::VERSION}
     L
 
-    expect(lockfile).to eq good_lockfile
+    lockfile_should_be good_lockfile
 
-    bad_lockfile = <<~L
+    bad_lockfile = strip_whitespace <<-L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -222,23 +222,23 @@ RSpec.describe "bundle install across platforms" do
     aggregate_failures do
       lockfile bad_lockfile
       bundle :install
-      expect(lockfile).to eq good_lockfile
+      lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
       bundle :update, :all => true
-      expect(lockfile).to eq good_lockfile
+      lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
       bundle "update ffi"
-      expect(lockfile).to eq good_lockfile
+      lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
       bundle "update empyrean"
-      expect(lockfile).to eq good_lockfile
+      lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
       bundle :lock
-      expect(lockfile).to eq good_lockfile
+      lockfile_should_be good_lockfile
     end
   end
 
@@ -310,7 +310,7 @@ RSpec.describe "bundle install across platforms" do
 
     expect(the_bundle).to include_gem "platform_specific 1.0 RUBY"
 
-    expect(lockfile).to eq <<~G
+    lockfile_should_be <<-G
       GEM
         remote: #{file_uri_for(gem_repo1)}/
         specs:
@@ -400,7 +400,6 @@ RSpec.describe "bundle install with platform conditionals" do
     build_git "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
       platform :#{not_local_tag} do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       end
@@ -447,7 +446,7 @@ RSpec.describe "bundle install with platform conditionals" do
 
     expect(err).to be_empty
 
-    expect(lockfile).to eq <<~L
+    lockfile_should_be <<-L
       GEM
         remote: #{file_uri_for(gem_repo1)}/
         specs:

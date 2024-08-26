@@ -46,7 +46,6 @@ RSpec.describe "Bundler.require" do
     end
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path}" do
         gem "one", :group => :bar, :require => %w[baz qux]
         gem "two"
@@ -113,7 +112,6 @@ RSpec.describe "Bundler.require" do
 
   it "raises an exception if a require is specified but the file does not exist" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path}" do
         gem "two", :require => 'fail'
       end
@@ -132,7 +130,6 @@ RSpec.describe "Bundler.require" do
     end
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path}" do
         gem "faulty"
       end
@@ -149,7 +146,6 @@ RSpec.describe "Bundler.require" do
     end
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path}" do
         gem "loadfuuu"
       end
@@ -176,7 +172,6 @@ RSpec.describe "Bundler.require" do
 
     it "requires gem names that are namespaced" do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
         path '#{lib_path}' do
           gem 'jquery-rails'
         end
@@ -191,8 +186,6 @@ RSpec.describe "Bundler.require" do
         s.write "lib/brcrypt.rb", "BCrypt = '1.0.0'"
       end
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-
         path "#{lib_path}" do
           gem "bcrypt-ruby"
         end
@@ -209,7 +202,6 @@ RSpec.describe "Bundler.require" do
 
     it "does not mangle explicitly given requires" do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem 'jquery-rails', :require => 'jquery-rails'
         end
@@ -227,7 +219,6 @@ RSpec.describe "Bundler.require" do
       end
 
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "load-fuuu"
         end
@@ -251,7 +242,6 @@ RSpec.describe "Bundler.require" do
       end
 
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "load-fuuu"
         end
@@ -310,7 +300,6 @@ RSpec.describe "Bundler.require" do
 
     it "works when the gems are in the Gemfile in the correct order" do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
           gem "one"
@@ -329,7 +318,6 @@ RSpec.describe "Bundler.require" do
         end
 
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
           gem "multi_gem", :require => "one", :group => :one
           gem "multi_gem", :require => "two", :group => :two
         G
@@ -353,7 +341,6 @@ RSpec.describe "Bundler.require" do
 
     it "fails when the gems are in the Gemfile in the wrong order" do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "one"
           gem "two"
@@ -371,7 +358,6 @@ RSpec.describe "Bundler.require" do
         end
 
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
           gem "busted_require"
         G
 
@@ -410,7 +396,6 @@ RSpec.describe "Bundler.require" do
     build_git "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 

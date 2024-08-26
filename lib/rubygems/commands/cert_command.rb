@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../security'
+require 'rubygems/command'
+require 'rubygems/security'
 
 class Gem::Commands::CertCommand < Gem::Command
   def initialize
@@ -43,15 +43,10 @@ class Gem::Commands::CertCommand < Gem::Command
       options[:key] = open_private_key(key_file)
     end
 
-    add_option('-A', '--key-algorithm ALGORITHM',
-               'Select which key algorithm to use for --build') do |algorithm, options|
-      options[:key_algorithm] = algorithm
-    end
-
     add_option('-s', '--sign CERT',
                'Signs CERT with the key from -K',
                'and the certificate from -C') do |cert_file, options|
-      raise Gem::OptionParser::InvalidArgument, "#{cert_file}: does not exist" unless
+      raise OptionParser::InvalidArgument, "#{cert_file}: does not exist" unless
         File.file? cert_file
 
       options[:sign] << cert_file
@@ -85,23 +80,23 @@ class Gem::Commands::CertCommand < Gem::Command
     check_openssl
     OpenSSL::X509::Certificate.new File.read certificate_file
   rescue Errno::ENOENT
-    raise Gem::OptionParser::InvalidArgument, "#{certificate_file}: does not exist"
+    raise OptionParser::InvalidArgument, "#{certificate_file}: does not exist"
   rescue OpenSSL::X509::CertificateError
-    raise Gem::OptionParser::InvalidArgument,
+    raise OptionParser::InvalidArgument,
       "#{certificate_file}: invalid X509 certificate"
   end
 
   def open_private_key(key_file)
     check_openssl
     passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
-    key = OpenSSL::PKey.read File.read(key_file), passphrase
-    raise Gem::OptionParser::InvalidArgument,
+    key = OpenSSL::PKey::RSA.new File.read(key_file), passphrase
+    raise OptionParser::InvalidArgument,
       "#{key_file}: private key not found" unless key.private?
     key
   rescue Errno::ENOENT
-    raise Gem::OptionParser::InvalidArgument, "#{key_file}: does not exist"
-  rescue OpenSSL::PKey::PKeyError, ArgumentError
-    raise Gem::OptionParser::InvalidArgument, "#{key_file}: invalid RSA, DSA, or EC key"
+    raise OptionParser::InvalidArgument, "#{key_file}: does not exist"
+  rescue OpenSSL::PKey::RSAError
+    raise OptionParser::InvalidArgument, "#{key_file}: invalid RSA key"
   end
 
   def execute
@@ -175,8 +170,7 @@ class Gem::Commands::CertCommand < Gem::Command
     raise Gem::CommandLineError,
           "Passphrase and passphrase confirmation don't match" unless passphrase == passphrase_confirmation
 
-    algorithm = options[:key_algorithm] || Gem::Security::DEFAULT_KEY_ALGORITHM
-    key = Gem::Security.create_key(algorithm)
+    key      = Gem::Security.create_key
     key_path = Gem::Security.write key, "gem-private_key.pem", 0600, passphrase
 
     return key, key_path
@@ -261,14 +255,13 @@ For further reading on signing gems see `ri Gem::Security`.
     key_file = File.join Gem.default_key_path
     key = File.read key_file
     passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
-    options[:key] = OpenSSL::PKey.read key, passphrase
-
+    options[:key] = OpenSSL::PKey::RSA.new key, passphrase
   rescue Errno::ENOENT
     alert_error \
       "--private-key not specified and ~/.gem/gem-private_key.pem does not exist"
 
     terminate_interaction 1
-  rescue OpenSSL::PKey::PKeyError
+  rescue OpenSSL::PKey::RSAError
     alert_error \
       "--private-key not specified and ~/.gem/gem-private_key.pem is not valid"
 

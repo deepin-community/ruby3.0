@@ -1,4 +1,3 @@
-/* -*- mode: c; indent-tabs-mode: t -*- */
 /**********************************************************************
 
   stringio.c -
@@ -12,7 +11,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "3.0.1"
+#define STRINGIO_VERSION "3.0.0"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -65,7 +64,7 @@ strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 		n = strchr(n, '|');
 	    }
 	    e = strchr(++n, ':');
-	    len = e ? e - n : (long)strlen(n);
+	    len = e ? e - n : strlen(n);
 	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
 		if (e) {
 		    memcpy(encname, n, len);
@@ -600,14 +599,6 @@ strio_closed_write(VALUE self)
     return Qtrue;
 }
 
-static struct StringIO *
-strio_to_read(VALUE self)
-{
-    struct StringIO *ptr = readable(self);
-    if (ptr->pos < RSTRING_LEN(ptr->string)) return ptr;
-    return NULL;
-}
-
 /*
  * call-seq:
  *   strio.eof     -> true or false
@@ -619,7 +610,8 @@ strio_to_read(VALUE self)
 static VALUE
 strio_eof(VALUE self)
 {
-    if (strio_to_read(self)) return Qfalse;
+    struct StringIO *ptr = readable(self);
+    if (ptr->pos < RSTRING_LEN(ptr->string)) return Qfalse;
     return Qtrue;
 }
 
@@ -829,11 +821,11 @@ strio_get_sync(VALUE self)
 static VALUE
 strio_each_byte(VALUE self)
 {
-    struct StringIO *ptr;
+    struct StringIO *ptr = readable(self);
 
     RETURN_ENUMERATOR(self, 0, 0);
 
-    while ((ptr = strio_to_read(self)) != NULL) {
+    while (ptr->pos < RSTRING_LEN(ptr->string)) {
 	char c = RSTRING_PTR(ptr->string)[ptr->pos++];
 	rb_yield(CHR2FIX(c));
     }
@@ -1072,7 +1064,11 @@ strio_each_codepoint(VALUE self)
 
     ptr = readable(self);
     enc = get_enc(ptr);
-    while ((ptr = strio_to_read(self)) != NULL) {
+    for (;;) {
+	if (ptr->pos >= RSTRING_LEN(ptr->string)) {
+	    return self;
+	}
+
 	c = rb_enc_codepoint_len(RSTRING_PTR(ptr->string)+ptr->pos,
 				 RSTRING_END(ptr->string), &n, enc);
 	ptr->pos += n;

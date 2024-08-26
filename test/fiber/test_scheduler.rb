@@ -66,23 +66,9 @@ class TestFiberScheduler < Test::Unit::TestCase
     RUBY
   end
 
-  def test_minimal_interface
-    scheduler = Object.new
-
-    def scheduler.block
-    end
-
-    def scheduler.unblock
-    end
-
-    def scheduler.io_wait
-    end
-
-    def scheduler.kernel_sleep
-    end
-
+  def test_optional_close
     thread = Thread.new do
-      Fiber.set_scheduler scheduler
+      Fiber.set_scheduler Object.new
     end
 
     thread.join

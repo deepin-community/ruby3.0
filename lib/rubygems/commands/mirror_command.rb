@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative '../command'
+require 'rubygems/command'
 
 unless defined? Gem::Commands::MirrorCommand
   class Gem::Commands::MirrorCommand < Gem::Command

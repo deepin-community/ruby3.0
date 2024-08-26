@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../version_option'
+require 'rubygems/command'
+require 'rubygems/local_remote_options'
+require 'rubygems/version_option'
 
 class Gem::Commands::DependencyCommand < Gem::Command
   include Gem::LocalRemoteOptions

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'remote_fetcher'
-require_relative 'text'
+require 'rubygems/remote_fetcher'
+require 'rubygems/text'
 
 ##
 # Utility methods for using the RubyGems API.
@@ -31,8 +31,7 @@ module Gem::GemcutterUtilities
 
   def add_otp_option
     add_option('--otp CODE',
-               'Digit code for multifactor authentication',
-               'You can also use the environment variable GEM_HOST_OTP_CODE') do |value, options|
+               'Digit code for multifactor authentication') do |value, options|
       options[:otp] = value
     end
   end

@@ -1,7 +1,8 @@
 Source: ruby3.0
 Section: ruby
 Priority: optional
-Maintainer: Debian Ruby Team <pkg-ruby-extras-maintainers@lists.alioth.debian.org>
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Debian Ruby Team <pkg-ruby-extras-maintainers@lists.alioth.debian.org>
 Uploaders: Antonio Terceiro <terceiro@debian.org>,
            Utkarsh Gupta <utkarsh@debian.org>,
            Lucas Kanashiro <kanashiro@debian.org>

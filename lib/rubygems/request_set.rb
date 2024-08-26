@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'tsort'
+require 'tsort'
 
 ##
 # A RequestSet groups a request to activate a set of dependencies.
@@ -15,7 +15,7 @@ require_relative 'tsort'
 #   #=> ["nokogiri-1.6.0", "mini_portile-0.5.1", "pg-0.17.0"]
 
 class Gem::RequestSet
-  include Gem::TSort
+  include TSort
 
   ##
   # Array of gems to install even if already installed
@@ -151,7 +151,7 @@ class Gem::RequestSet
     @prerelease = options[:prerelease]
 
     requests = []
-    download_queue = Thread::Queue.new
+    download_queue = Queue.new
 
     # Create a thread-safe list of gems to download
     sorted_requests.each do |req|
@@ -303,7 +303,7 @@ class Gem::RequestSet
       end
     end
 
-    require_relative "dependency_installer"
+    require "rubygems/dependency_installer"
     inst = Gem::DependencyInstaller.new options
     inst.installed_gems.replace specs
 
@@ -461,6 +461,6 @@ class Gem::RequestSet
   end
 end
 
-require_relative 'request_set/gem_dependency_api'
-require_relative 'request_set/lockfile'
-require_relative 'request_set/lockfile/tokenizer'
+require 'rubygems/request_set/gem_dependency_api'
+require 'rubygems/request_set/lockfile'
+require 'rubygems/request_set/lockfile/tokenizer'

@@ -6,11 +6,11 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'deprecate'
-require_relative 'basic_specification'
-require_relative 'stub_specification'
-require_relative 'specification_policy'
-require_relative 'util/list'
+require 'rubygems/deprecate'
+require 'rubygems/basic_specification'
+require 'rubygems/stub_specification'
+require 'rubygems/specification_policy'
+require 'rubygems/util/list'
 
 ##
 # The Specification class contains the information for a gem.  Typically
@@ -102,8 +102,12 @@ class Gem::Specification < Gem::BasicSpecification
   today = Time.now.utc
   TODAY = Time.utc(today.year, today.month, today.day) # :nodoc:
 
-  @load_cache = {} # :nodoc:
-  @load_cache_mutex = Thread::Mutex.new
+  # rubocop:disable Style/MutableConstant
+  LOAD_CACHE = {} # :nodoc:
+  # rubocop:enable Style/MutableConstant
+  LOAD_CACHE_MUTEX = Mutex.new
+
+  private_constant :LOAD_CACHE if defined? private_constant
 
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
 
@@ -178,23 +182,13 @@ class Gem::Specification < Gem::BasicSpecification
     @@default_value[k].nil?
   end
 
-  def self.clear_specs # :nodoc:
-    @@all_specs_mutex.synchronize do
-      @@all = nil
-      @@stubs = nil
-      @@stubs_by_name = {}
-      @@spec_with_requirable_file = {}
-      @@active_stub_with_requirable_file = {}
-    end
-  end
-  private_class_method :clear_specs
-
-  @@all_specs_mutex = Thread::Mutex.new
-
-  clear_specs
+  @@stubs = nil
+  @@stubs_by_name = {}
 
   # Sentinel object to represent "not found" stubs
   NOT_FOUND = Struct.new(:to_spec, :this).new # :nodoc:
+  @@spec_with_requirable_file = {}
+  @@active_stub_with_requirable_file = {}
 
   # Tracking removed method calls to warn users during build time.
   REMOVED_METHODS = [:rubyforge_project=].freeze # :nodoc:
@@ -330,21 +324,17 @@ class Gem::Specification < Gem::BasicSpecification
   # This should just be the name of your license. The full text of the license
   # should be inside of the gem (at the top level) when you build it.
   #
-  # The simplest way is to specify the standard SPDX ID
+  # The simplest way, is to specify the standard SPDX ID
   # https://spdx.org/licenses/ for the license.
-  # Ideally, you should pick one that is OSI (Open Source Initiative)
+  # Ideally you should pick one that is OSI (Open Source Initiative)
   # http://opensource.org/licenses/alphabetical approved.
   #
-  # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
+  # The most commonly used OSI approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at http://choosealicense.com/.
   #
-  # You can also use a custom license file along with your gemspec and specify
-  # a LicenseRef-<idstring>, where idstring is the name of the file containing
-  # the license text.
-  #
   # You should specify a license for your gem so that people know how they are
-  # permitted to use it and any restrictions you're placing on it.  Not
-  # specifying a license means all rights are reserved; others have no right
+  # permitted to use it, and any restrictions you're placing on it.  Not
+  # specifying a license means all rights are reserved; others have no rights
   # to use the code for any purpose.
   #
   # You can set multiple licenses with #licenses=
@@ -754,15 +744,23 @@ class Gem::Specification < Gem::BasicSpecification
   attr_accessor :specification_version
 
   def self._all # :nodoc:
-    @@all_specs_mutex.synchronize { @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec) }
+    unless defined?(@@all) && @@all
+      @@all = stubs.map(&:to_spec)
+
+      # After a reset, make sure already loaded specs
+      # are still marked as activated.
+      specs = {}
+      Gem.loaded_specs.each_value{|s| specs[s] = true }
+      @@all.each{|s| s.activated = true if specs[s] }
+    end
+    @@all
   end
 
-  def self.clear_load_cache # :nodoc:
-    @load_cache_mutex.synchronize do
-      @load_cache.clear
+  def self._clear_load_cache # :nodoc:
+    LOAD_CACHE_MUTEX.synchronize do
+      LOAD_CACHE.clear
     end
   end
-  private_class_method :clear_load_cache
 
   def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
@@ -1110,7 +1108,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.load(file)
     return unless file
 
-    _spec = @load_cache_mutex.synchronize { @load_cache[file] }
+    _spec = LOAD_CACHE_MUTEX.synchronize { LOAD_CACHE[file] }
     return _spec if _spec
 
     file = file.dup.tap(&Gem::UNTAINT)
@@ -1125,12 +1123,12 @@ class Gem::Specification < Gem::BasicSpecification
 
       if Gem::Specification === _spec
         _spec.loaded_from = File.expand_path file.to_s
-        @load_cache_mutex.synchronize do
-          prev = @load_cache[file]
+        LOAD_CACHE_MUTEX.synchronize do
+          prev = LOAD_CACHE[file]
           if prev
             _spec = prev
           else
-            @load_cache[file] = _spec
+            LOAD_CACHE[file] = _spec
           end
         end
         return _spec
@@ -1228,8 +1226,12 @@ class Gem::Specification < Gem::BasicSpecification
   def self.reset
     @@dirs = nil
     Gem.pre_reset_hooks.each {|hook| hook.call }
-    clear_specs
-    clear_load_cache
+    @@all = nil
+    @@stubs = nil
+    @@stubs_by_name = {}
+    @@spec_with_requirable_file = {}
+    @@active_stub_with_requirable_file = {}
+    _clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
       w = "W" + "ARN"
@@ -1554,8 +1556,8 @@ class Gem::Specification < Gem::BasicSpecification
   # the gem.build_complete file is missing.
 
   def build_extensions # :nodoc:
-    return if extensions.empty?
     return if default_gem?
+    return if extensions.empty?
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir)
     return if !File.exist?(File.join(base_dir, 'extensions'))
@@ -1566,9 +1568,9 @@ class Gem::Specification < Gem::BasicSpecification
       unresolved_deps = Gem::Specification.unresolved_deps.dup
       Gem::Specification.unresolved_deps.clear
 
-      require_relative 'config_file'
-      require_relative 'ext'
-      require_relative 'user_interaction'
+      require 'rubygems/config_file'
+      require 'rubygems/ext'
+      require 'rubygems/user_interaction'
 
       ui = Gem::SilentUI.new
       Gem::DefaultUserInteraction.use_ui ui do
@@ -1687,6 +1689,12 @@ class Gem::Specification < Gem::BasicSpecification
     @date = case date
             when String then
               if DateTimeFormat =~ date
+                Time.utc($1.to_i, $2.to_i, $3.to_i)
+
+              # Workaround for where the date format output from psych isn't
+              # parsed as a Time object by syck and thus comes through as a
+              # string.
+              elsif /\A(\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}:\d{2}\.\d+?Z\z/ =~ date
                 Time.utc($1.to_i, $2.to_i, $3.to_i)
               else
                 raise(Gem::InvalidSpecificationException,
@@ -2118,8 +2126,8 @@ class Gem::Specification < Gem::BasicSpecification
   # probably want to build_extensions
 
   def missing_extensions?
-    return false if extensions.empty?
     return false if default_gem?
+    return false if extensions.empty?
     return false if File.exist? gem_build_complete_path
 
     true
@@ -2523,7 +2531,7 @@ class Gem::Specification < Gem::BasicSpecification
     # back, we have to check again here to make sure that our
     # psych code was properly loaded, and load it if not.
     unless Gem.const_defined?(:NoAliasYAMLTree)
-      require_relative 'psych_tree'
+      require 'rubygems/psych_tree'
     end
 
     builder = Gem::NoAliasYAMLTree.create

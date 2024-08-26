@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative "deprecate"
+require "rubygems/deprecate"
 
 ##
 # A Requirement is a set of one or more version restrictions. It supports a
@@ -194,19 +194,24 @@ class Gem::Requirement
   end
 
   def marshal_dump # :nodoc:
+    fix_syck_default_key_in_requirements
+
     [@requirements]
   end
 
   def marshal_load(array) # :nodoc:
     @requirements = array[0]
 
-    raise TypeError, "wrong @requirements" unless Array === @requirements
+    fix_syck_default_key_in_requirements
   end
 
   def yaml_initialize(tag, vals) # :nodoc:
     vals.each do |ivar, val|
       instance_variable_set "@#{ivar}", val
     end
+
+    Gem.load_yaml
+    fix_syck_default_key_in_requirements
   end
 
   def init_with(coder) # :nodoc:
@@ -241,7 +246,8 @@ class Gem::Requirement
   def satisfied_by?(version)
     raise ArgumentError, "Need a Gem::Version: #{version.inspect}" unless
       Gem::Version === version
-    requirements.all? {|op, rv| OPS[op].call version, rv }
+    # #28965: syck has a bug with unquoted '=' YAML.loading as YAML::DefaultKey
+    requirements.all? {|op, rv| (OPS[op] || OPS["="]).call version, rv }
   end
 
   alias :=== :satisfied_by?
@@ -282,6 +288,19 @@ class Gem::Requirement
 
   def _tilde_requirements
     @_tilde_requirements ||= _sorted_requirements.select {|r| r.first == "~>" }
+  end
+
+  private
+
+  def fix_syck_default_key_in_requirements # :nodoc:
+    Gem.load_yaml
+
+    # Fixup the Syck DefaultKey bug
+    @requirements.each do |r|
+      if r[0].kind_of? Gem::SyckDefaultKey
+        r[0] = "="
+      end
+    end
   end
 end
 

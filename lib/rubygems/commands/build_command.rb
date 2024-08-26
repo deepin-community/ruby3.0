@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../package'
-require_relative '../version_option'
+require 'rubygems/command'
+require 'rubygems/package'
+require 'rubygems/version_option'
 
 class Gem::Commands::BuildCommand < Gem::Command
   include Gem::VersionOption

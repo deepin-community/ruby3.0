@@ -5,9 +5,9 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative '../rubygems'
-require_relative 'command_manager'
-require_relative 'deprecate'
+require 'rubygems'
+require 'rubygems/command_manager'
+require 'rubygems/deprecate'
 
 ##
 # Load additional plugins from $LOAD_PATH

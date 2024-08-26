@@ -100,10 +100,8 @@ class Scheduler
 
     self.run
   ensure
-    if @urgent
-      @urgent.each(&:close)
-      @urgent = nil
-    end
+    @urgent.each(&:close)
+    @urgent = nil
 
     @closed = true
 
@@ -188,23 +186,5 @@ class Scheduler
     fiber.resume
 
     return fiber
-  end
-end
-
-class BrokenUnblockScheduler < Scheduler
-  def unblock(blocker, fiber)
-    super
-
-    raise "Broken unblock!"
-  end
-end
-
-class SleepingUnblockScheduler < Scheduler
-  # This method is invoked when the thread is exiting.
-  def unblock(blocker, fiber)
-    super
-
-    # This changes the current thread state to `THREAD_RUNNING` which causes `thread_join_sleep` to hang.
-    sleep(0.1)
   end
 end

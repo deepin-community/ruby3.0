@@ -6,7 +6,7 @@
 #++
 
 require 'uri'
-require_relative '../rubygems'
+require 'rubygems'
 
 ##
 # Mixin methods for local and remote Gem::Command options.
@@ -14,14 +14,14 @@ require_relative '../rubygems'
 module Gem::LocalRemoteOptions
 
   ##
-  # Allows Gem::OptionParser to handle HTTP URIs.
+  # Allows OptionParser to handle HTTP URIs.
 
   def accept_uri_http
-    Gem::OptionParser.accept URI::HTTP do |value|
+    OptionParser.accept URI::HTTP do |value|
       begin
         uri = URI.parse value
       rescue URI::InvalidURIError
-        raise Gem::OptionParser::InvalidArgument, value
+        raise OptionParser::InvalidArgument, value
       end
 
       valid_uri_schemes = ["http", "https", "file", "s3"]

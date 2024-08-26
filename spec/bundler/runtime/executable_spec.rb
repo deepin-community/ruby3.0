@@ -63,7 +63,6 @@ RSpec.describe "Running bin/* commands" do
     end
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
       gem "rack", :path => "#{lib_path("rack")}"
     G
 

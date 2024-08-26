@@ -12,16 +12,22 @@ module Bundler
     def setup(*groups)
       @definition.ensure_equivalent_gemfile_and_lockfile if Bundler.frozen_bundle?
 
+      groups.map!(&:to_sym)
+
       # Has to happen first
       clean_load_path
 
-      specs = @definition.specs_for(groups)
+      specs = groups.any? ? @definition.specs_for(groups) : requested_specs
 
       SharedHelpers.set_bundle_environment
       Bundler.rubygems.replace_entrypoints(specs)
 
       # Activate the specs
       load_paths = specs.map do |spec|
+        unless spec.loaded_from
+          raise GemNotFound, "#{spec.full_name} is missing. Run `bundle install` to get it."
+        end
+
         check_for_activated_spec!(spec)
 
         Bundler.rubygems.mark_loaded(spec)
@@ -100,7 +106,7 @@ module Bundler
 
     alias_method :gems, :specs
 
-    def cache(custom_path = nil, local = false)
+    def cache(custom_path = nil)
       cache_path = Bundler.app_cache(custom_path)
       SharedHelpers.filesystem_access(cache_path) do |p|
         FileUtils.mkdir_p(p)
@@ -108,20 +114,7 @@ module Bundler
 
       Bundler.ui.info "Updating files in #{Bundler.settings.app_cache_path}"
 
-      specs_to_cache = if Bundler.settings[:cache_all_platforms]
-        @definition.resolve.materialized_for_all_platforms
-      else
-        begin
-          specs
-        rescue GemNotFound
-          if local
-            Bundler.ui.warn "Some gems seem to be missing from your #{Bundler.settings.app_cache_path} directory."
-          end
-
-          raise
-        end
-      end
-
+      specs_to_cache = Bundler.settings[:cache_all_platforms] ? @definition.resolve.materialized_for_all_platforms : specs
       specs_to_cache.each do |spec|
         next if spec.name == "bundler"
         next if spec.source.is_a?(Source::Gemspec)
@@ -265,7 +258,7 @@ module Bundler
 
       return if manuals.empty?
       Bundler::SharedHelpers.set_env "MANPATH", manuals.concat(
-        ENV["MANPATH"] ? ENV["MANPATH"].to_s.split(File::PATH_SEPARATOR) : [""]
+        ENV["MANPATH"].to_s.split(File::PATH_SEPARATOR)
       ).uniq.join(File::PATH_SEPARATOR)
     end
 
@@ -291,7 +284,7 @@ module Bundler
       return unless activated_spec = Bundler.rubygems.loaded_specs(spec.name)
       return if activated_spec.version == spec.version
 
-      suggestion = if activated_spec.default_gem?
+      suggestion = if Bundler.rubygems.spec_default_gem?(activated_spec)
         "Since #{spec.name} is a default gem, you can either remove your dependency on it" \
         " or try updating to a newer version of bundler that supports #{spec.name} as a default gem."
       else

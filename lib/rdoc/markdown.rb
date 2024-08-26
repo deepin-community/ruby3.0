@@ -344,8 +344,9 @@ class RDoc::Markdown
     end
 
     def scan(reg)
-      if m = reg.match(@string, @pos)
-        @pos = m.end(0)
+      if m = reg.match(@string[@pos..-1])
+        width = m.end(0)
+        @pos += width
         return true
       end
 
@@ -1059,7 +1060,7 @@ class RDoc::Markdown
           self.pos = _save3
           break
         end
-        _tmp = scan(/\G(?-mix:#*)/)
+        _tmp = scan(/\A(?-mix:#*)/)
         unless _tmp
           self.pos = _save3
           break
@@ -1099,7 +1100,7 @@ class RDoc::Markdown
     _save = self.pos
     while true # sequence
       _text_start = self.pos
-      _tmp = scan(/\G(?-mix:\#{1,6})/)
+      _tmp = scan(/\A(?-mix:\#{1,6})/)
       if _tmp
         text = get_text(_text_start)
       end
@@ -1164,7 +1165,7 @@ class RDoc::Markdown
           self.pos = _save3
           break
         end
-        _tmp = scan(/\G(?-mix:#*)/)
+        _tmp = scan(/\A(?-mix:#*)/)
         unless _tmp
           self.pos = _save3
           break
@@ -1224,7 +1225,7 @@ class RDoc::Markdown
 
     _save = self.pos
     while true # sequence
-      _tmp = scan(/\G(?-mix:={1,})/)
+      _tmp = scan(/\A(?-mix:={1,})/)
       unless _tmp
         self.pos = _save
         break
@@ -1245,7 +1246,7 @@ class RDoc::Markdown
 
     _save = self.pos
     while true # sequence
-      _tmp = scan(/\G(?-mix:-{1,})/)
+      _tmp = scan(/\A(?-mix:-{1,})/)
       unless _tmp
         self.pos = _save
         break
@@ -2129,7 +2130,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = scan(/\G(?-mix:[+*-])/)
+      _tmp = scan(/\A(?-mix:[+*-])/)
       unless _tmp
         self.pos = _save
         break
@@ -9384,7 +9385,7 @@ class RDoc::Markdown
               self.pos = _save7
               break
             end
-            _tmp = scan(/\G(?-mix:[^`\n]*$)/)
+            _tmp = scan(/\A(?-mix:[^`\n]*$)/)
             unless _tmp
               self.pos = _save7
             end
@@ -9475,7 +9476,7 @@ class RDoc::Markdown
                   self.pos = _save15
                   break
                 end
-                _tmp = scan(/\G(?-mix:[^`\n]*$)/)
+                _tmp = scan(/\A(?-mix:[^`\n]*$)/)
                 unless _tmp
                   self.pos = _save15
                 end
@@ -9724,7 +9725,7 @@ class RDoc::Markdown
 
         _save3 = self.pos
         while true # sequence
-          _tmp = scan(/\G(?-mix:_+)/)
+          _tmp = scan(/\A(?-mix:_+)/)
           unless _tmp
             self.pos = _save3
             break
@@ -9754,7 +9755,7 @@ class RDoc::Markdown
 
             _save6 = self.pos
             while true # sequence
-              _tmp = scan(/\G(?-mix:_+)/)
+              _tmp = scan(/\A(?-mix:_+)/)
               unless _tmp
                 self.pos = _save6
                 break
@@ -9817,7 +9818,7 @@ class RDoc::Markdown
         break
       end
       _text_start = self.pos
-      _tmp = scan(/\G(?-mix:[:\\`|*_{}\[\]()#+.!><-])/)
+      _tmp = scan(/\A(?-mix:[:\\`|*_{}\[\]()#+.!><-])/)
       if _tmp
         text = get_text(_text_start)
       end
@@ -9943,7 +9944,7 @@ class RDoc::Markdown
           self.pos = _save5
           break
         end
-        _tmp = scan(/\G(?-mix:={1,}|-{1,})/)
+        _tmp = scan(/\A(?-mix:={1,}|-{1,})/)
         unless _tmp
           self.pos = _save5
           break
@@ -10095,7 +10096,7 @@ class RDoc::Markdown
       _save1 = self.pos
       while true # sequence
         _text_start = self.pos
-        _tmp = scan(/\G(?-mix:\*{4,})/)
+        _tmp = scan(/\A(?-mix:\*{4,})/)
         if _tmp
           text = get_text(_text_start)
         end
@@ -10125,7 +10126,7 @@ class RDoc::Markdown
             self.pos = _save3
             break
           end
-          _tmp = scan(/\G(?-mix:\*+)/)
+          _tmp = scan(/\A(?-mix:\*+)/)
           unless _tmp
             self.pos = _save3
             break
@@ -10172,7 +10173,7 @@ class RDoc::Markdown
       _save1 = self.pos
       while true # sequence
         _text_start = self.pos
-        _tmp = scan(/\G(?-mix:_{4,})/)
+        _tmp = scan(/\A(?-mix:_{4,})/)
         if _tmp
           text = get_text(_text_start)
         end
@@ -10202,7 +10203,7 @@ class RDoc::Markdown
             self.pos = _save3
             break
           end
-          _tmp = scan(/\G(?-mix:_+)/)
+          _tmp = scan(/\A(?-mix:_+)/)
           unless _tmp
             self.pos = _save3
             break
@@ -11563,7 +11564,7 @@ class RDoc::Markdown
 
       _save1 = self.pos
       while true # sequence
-        _tmp = scan(/\G(?-mix:[A-Za-z]+)/)
+        _tmp = scan(/\A(?-mix:[A-Za-z]+)/)
         unless _tmp
           self.pos = _save1
           break
@@ -11688,7 +11689,7 @@ class RDoc::Markdown
 
       _save2 = self.pos
       while true # sequence
-        _tmp = scan(/\G(?i-mx:[\w+.\/!%~$-]+)/)
+        _tmp = scan(/\A(?i-mx:[\w+.\/!%~$-]+)/)
         unless _tmp
           self.pos = _save2
           break
@@ -12552,7 +12553,7 @@ class RDoc::Markdown
                 self.pos = _save10
                 break
               end
-              _tmp = scan(/\G(?-mix:`+)/)
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
                 self.pos = _save10
               end
@@ -12689,7 +12690,7 @@ class RDoc::Markdown
                     self.pos = _save24
                     break
                   end
-                  _tmp = scan(/\G(?-mix:`+)/)
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
                     self.pos = _save24
                   end
@@ -12866,7 +12867,7 @@ class RDoc::Markdown
                 self.pos = _save40
                 break
               end
-              _tmp = scan(/\G(?-mix:`+)/)
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
                 self.pos = _save40
               end
@@ -13003,7 +13004,7 @@ class RDoc::Markdown
                     self.pos = _save54
                     break
                   end
-                  _tmp = scan(/\G(?-mix:`+)/)
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
                     self.pos = _save54
                   end
@@ -13180,7 +13181,7 @@ class RDoc::Markdown
                 self.pos = _save70
                 break
               end
-              _tmp = scan(/\G(?-mix:`+)/)
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
                 self.pos = _save70
               end
@@ -13317,7 +13318,7 @@ class RDoc::Markdown
                     self.pos = _save84
                     break
                   end
-                  _tmp = scan(/\G(?-mix:`+)/)
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
                     self.pos = _save84
                   end
@@ -13494,7 +13495,7 @@ class RDoc::Markdown
                 self.pos = _save100
                 break
               end
-              _tmp = scan(/\G(?-mix:`+)/)
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
                 self.pos = _save100
               end
@@ -13631,7 +13632,7 @@ class RDoc::Markdown
                     self.pos = _save114
                     break
                   end
-                  _tmp = scan(/\G(?-mix:`+)/)
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
                     self.pos = _save114
                   end
@@ -13808,7 +13809,7 @@ class RDoc::Markdown
                 self.pos = _save130
                 break
               end
-              _tmp = scan(/\G(?-mix:`+)/)
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
                 self.pos = _save130
               end
@@ -13945,7 +13946,7 @@ class RDoc::Markdown
                     self.pos = _save144
                     break
                   end
-                  _tmp = scan(/\G(?-mix:`+)/)
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
                     self.pos = _save144
                   end
@@ -14597,7 +14598,7 @@ class RDoc::Markdown
 
     _save = self.pos
     while true # choice
-      _tmp = scan(/\G(?-mix:[~*_`&\[\]()<!#\\'"])/)
+      _tmp = scan(/\A(?-mix:[~*_`&\[\]()<!#\\'"])/)
       break if _tmp
       self.pos = _save
       _tmp = _ExtendedSpecialChar()
@@ -14702,13 +14703,13 @@ class RDoc::Markdown
 
     _save = self.pos
     while true # sequence
-      _tmp = scan(/\G(?i-mx:&#x)/)
+      _tmp = scan(/\A(?i-mx:&#x)/)
       unless _tmp
         self.pos = _save
         break
       end
       _text_start = self.pos
-      _tmp = scan(/\G(?-mix:[0-9a-fA-F]+)/)
+      _tmp = scan(/\A(?-mix:[0-9a-fA-F]+)/)
       if _tmp
         text = get_text(_text_start)
       end
@@ -14744,7 +14745,7 @@ class RDoc::Markdown
         break
       end
       _text_start = self.pos
-      _tmp = scan(/\G(?-mix:[0-9]+)/)
+      _tmp = scan(/\A(?-mix:[0-9]+)/)
       if _tmp
         text = get_text(_text_start)
       end
@@ -14780,7 +14781,7 @@ class RDoc::Markdown
         break
       end
       _text_start = self.pos
-      _tmp = scan(/\G(?-mix:[A-Za-z0-9]+)/)
+      _tmp = scan(/\A(?-mix:[A-Za-z0-9]+)/)
       if _tmp
         text = get_text(_text_start)
       end
@@ -14812,14 +14813,14 @@ class RDoc::Markdown
 
   # NonindentSpace = / {0,3}/
   def _NonindentSpace
-    _tmp = scan(/\G(?-mix: {0,3})/)
+    _tmp = scan(/\A(?-mix: {0,3})/)
     set_failed_rule :_NonindentSpace unless _tmp
     return _tmp
   end
 
   # Indent = /\t|    /
   def _Indent
-    _tmp = scan(/\G(?-mix:\t|    )/)
+    _tmp = scan(/\A(?-mix:\t|    )/)
     set_failed_rule :_Indent unless _tmp
     return _tmp
   end
@@ -15761,7 +15762,7 @@ class RDoc::Markdown
             self.pos = _save11
             break
           end
-          _tmp = scan(/\G(?-mix:`+)/)
+          _tmp = scan(/\A(?-mix:`+)/)
           unless _tmp
             self.pos = _save11
           end
@@ -15842,7 +15843,7 @@ class RDoc::Markdown
                 self.pos = _save19
                 break
               end
-              _tmp = scan(/\G(?-mix:`+)/)
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
                 self.pos = _save19
               end

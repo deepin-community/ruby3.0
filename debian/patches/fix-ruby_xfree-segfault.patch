@@ -1,0 +1,46 @@
+From 52e571fa72debcd764765775bd1b76ee87e36d2d Mon Sep 17 00:00:00 2001
+From: Mike Dalessio <mike.dalessio@gmail.com>
+Date: Tue, 4 Apr 2023 23:55:43 -0400
+Subject: [PATCH] Ensure ruby_xfree won't segfault if called after vm_destruct
+
+[Bug #19580]
+
+The real-world scenario motivating this change is libxml2's pthread
+code which uses `pthread_key_create` to set up a destructor that is
+called at thread exit to free thread-local storage.
+
+There is a small window of time -- after ruby_vm_destruct but before
+the process exits -- in which a pthread may exit and the destructor is
+called, leading to a segfault.
+
+Please note that this window of time may be relatively large if
+`atexit` is being used.
+---
+
+Origin: upstream, https://github.com/ruby/ruby/commit/52e571fa72deb
+Reviewed-By: Lucas Kanashiro <kanashiro@ubuntu.com>
+Bug: https://bugs.ruby-lang.org/issues/19580
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/noble/+source/ruby3.0/+bug/2049197
+Last-Updated: 2024-03-20
+
+--- a/gc.c
++++ b/gc.c
+@@ -10919,8 +10919,16 @@
+ void
+ ruby_sized_xfree(void *x, size_t size)
+ {
+-    if (x) {
+-	objspace_xfree(&rb_objspace, x, size);
++    if (LIKELY(x)) {
++        /* It's possible for a C extension's pthread destructor function set by pthread_key_create
++         * to be called after ruby_vm_destruct and attempt to free memory. Fall back to mimfree in
++         * that case. */
++        if (LIKELY(GET_VM())) {
++            objspace_xfree(&rb_objspace, x, size);
++        }
++        else {
++            ruby_mimfree(x);
++        }
+     }
+ }
+ 

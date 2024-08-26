@@ -106,13 +106,6 @@ VALUE cX509StoreContext;
 VALUE eX509StoreError;
 
 static void
-ossl_x509store_mark(void *ptr)
-{
-    X509_STORE *store = ptr;
-    rb_gc_mark((VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx));
-}
-
-static void
 ossl_x509store_free(void *ptr)
 {
     X509_STORE_free(ptr);
@@ -121,7 +114,7 @@ ossl_x509store_free(void *ptr)
 static const rb_data_type_t ossl_x509store_type = {
     "OpenSSL/X509/STORE",
     {
-        ossl_x509store_mark, ossl_x509store_free,
+	0, ossl_x509store_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
@@ -464,15 +457,22 @@ ossl_x509store_verify(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * Public Functions
+ */
+static void ossl_x509stctx_free(void*);
+
+
+static const rb_data_type_t ossl_x509stctx_type = {
+    "OpenSSL/X509/STORE_CTX",
+    {
+	0, ossl_x509stctx_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+/*
  * Private functions
  */
-static void
-ossl_x509stctx_mark(void *ptr)
-{
-    X509_STORE_CTX *ctx = ptr;
-    rb_gc_mark((VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx));
-}
-
 static void
 ossl_x509stctx_free(void *ptr)
 {
@@ -483,14 +483,6 @@ ossl_x509stctx_free(void *ptr)
 	X509_free(X509_STORE_CTX_get0_cert(ctx));
     X509_STORE_CTX_free(ctx);
 }
-
-static const rb_data_type_t ossl_x509stctx_type = {
-    "OpenSSL/X509/STORE_CTX",
-    {
-        ossl_x509stctx_mark, ossl_x509stctx_free,
-    },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
-};
 
 static VALUE
 ossl_x509stctx_alloc(VALUE klass)
@@ -525,9 +517,7 @@ static VALUE ossl_x509stctx_set_time(VALUE, VALUE);
 
 /*
  * call-seq:
- *   StoreContext.new(store, cert = nil, untrusted = nil)
- *
- * Sets up a StoreContext for a verification of the X.509 certificate _cert_.
+ *   StoreContext.new(store, cert = nil, chain = nil)
  */
 static VALUE
 ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
@@ -537,24 +527,15 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     X509_STORE *x509st;
     X509 *x509 = NULL;
     STACK_OF(X509) *x509s = NULL;
-    int state;
 
     rb_scan_args(argc, argv, "12", &store, &cert, &chain);
     GetX509StCtx(self, ctx);
     GetX509Store(store, x509st);
-    if (!NIL_P(cert))
-        x509 = DupX509CertPtr(cert); /* NEED TO DUP */
-    if (!NIL_P(chain)) {
-        x509s = ossl_protect_x509_ary2sk(chain, &state);
-        if (state) {
-            X509_free(x509);
-            rb_jump_tag(state);
-        }
-    }
-    if (X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
-        X509_free(x509);
+    if(!NIL_P(cert)) x509 = DupX509CertPtr(cert); /* NEED TO DUP */
+    if(!NIL_P(chain)) x509s = ossl_x509_ary2sk(chain);
+    if(X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
         sk_X509_pop_free(x509s, X509_free);
-        ossl_raise(eX509StoreError, "X509_STORE_CTX_init");
+        ossl_raise(eX509StoreError, NULL);
     }
     if (!NIL_P(t = rb_iv_get(store, "@time")))
 	ossl_x509stctx_set_time(self, t);

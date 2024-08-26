@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'net/http'
-require_relative 'user_interaction'
+require 'rubygems/user_interaction'
 
 class Gem::Request
   extend Gem::UserInteraction
@@ -96,10 +96,8 @@ class Gem::Request
     return unless cert
     case error_number
     when OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED then
-      require 'time'
       "Certificate #{cert.subject} expired at #{cert.not_after.iso8601}"
     when OpenSSL::X509::V_ERR_CERT_NOT_YET_VALID then
-      require 'time'
       "Certificate #{cert.subject} not valid until #{cert.not_before.iso8601}"
     when OpenSSL::X509::V_ERR_CERT_REJECTED then
       "Certificate #{cert.subject} is rejected"
@@ -193,7 +191,7 @@ class Gem::Request
     begin
       @requests[connection.object_id] += 1
 
-      verbose "#{request.method} #{Gem::Uri.new(@uri).redacted}"
+      verbose "#{request.method} #{@uri}"
 
       file_name = File.basename(@uri.path)
       # perform download progress reporter only for gems
@@ -289,6 +287,6 @@ class Gem::Request
   end
 end
 
-require_relative 'request/http_pool'
-require_relative 'request/https_pool'
-require_relative 'request/connection_pools'
+require 'rubygems/request/http_pool'
+require 'rubygems/request/https_pool'
+require 'rubygems/request/connection_pools'

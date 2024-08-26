@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative '../rubygems'
-require_relative 'package'
+require 'rubygems'
+require 'rubygems/package'
 require 'tmpdir'
 
 ##

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../install_update_options'
-require_relative '../dependency_installer'
-require_relative '../local_remote_options'
-require_relative '../validator'
-require_relative '../version_option'
+require 'rubygems/command'
+require 'rubygems/install_update_options'
+require 'rubygems/dependency_installer'
+require 'rubygems/local_remote_options'
+require 'rubygems/validator'
+require 'rubygems/version_option'
 
 ##
 # Gem installer command line tool
@@ -169,7 +169,7 @@ You can use `i` command instead of `install`.
   end
 
   def install_from_gemdeps # :nodoc:
-    require_relative '../request_set'
+    require 'rubygems/request_set'
     rs = Gem::RequestSet.new
 
     specs = rs.install_from_gemdeps options do |req, inst|
@@ -244,11 +244,11 @@ You can use `i` command instead of `install`.
 
   def load_hooks # :nodoc:
     if options[:install_as_default]
-      require_relative '../install_default_message'
+      require 'rubygems/install_default_message'
     else
-      require_relative '../install_message'
+      require 'rubygems/install_message'
     end
-    require_relative '../rdoc'
+    require 'rubygems/rdoc'
   end
 
   def show_install_errors(errors) # :nodoc:
@@ -257,8 +257,7 @@ You can use `i` command instead of `install`.
     errors.each do |x|
       return unless Gem::SourceFetchProblem === x
 
-      require_relative "../uri"
-      msg = "Unable to pull data from '#{Gem::Uri.new(x.source.uri).redacted}': #{x.error.message}"
+      msg = "Unable to pull data from '#{x.source.uri}': #{x.error.message}"
 
       alert_warning msg
     end

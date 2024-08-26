@@ -1,0 +1,29 @@
+From d9bc7b94ea9e8794da62e45269b5c3e0c11edaf4 Mon Sep 17 00:00:00 2001
+From: Mike Dalessio <mike.dalessio@gmail.com>
+Date: Sat, 28 Aug 2021 10:29:17 -0400
+Subject: [PATCH] Fix length calculation for Array#slice!
+
+Commit 4f24255 introduced a bug which allows a length to be passed to
+rb_ary_new4 which is too large, resulting in invalid memory access.
+
+For example:
+
+    (1..1000).to_a.slice!(-2, 1000)
+
+Origin: upstream, https://github.com/ruby/ruby/commit/d43279edacd09edf3a43e02d62f5be475e7c3bcb
+Bug: https://bugs.ruby-lang.org/issues/18138
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/ruby3.0/+bug/1982703
+Applied-Upstream: v3_2_0_preview3, commit:d43279edacd09edf3a43e02d62f5be475e7c3bcb
+Last-Updated: 2022-11-11
+
+--- a/array.c
++++ b/array.c
+@@ -4072,7 +4072,7 @@
+     else if (orig_len < pos) {
+         return Qnil;
+     }
+-    else if (orig_len < pos + len) {
++    if (orig_len < pos + len) {
+         len = orig_len - pos;
+     }
+     if (len == 0) {

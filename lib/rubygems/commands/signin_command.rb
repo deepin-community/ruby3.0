@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../gemcutter_utilities'
+require 'rubygems/command'
+require 'rubygems/gemcutter_utilities'
 
 class Gem::Commands::SigninCommand < Gem::Command
   include Gem::GemcutterUtilities

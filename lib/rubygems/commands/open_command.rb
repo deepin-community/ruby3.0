@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../version_option'
+require 'rubygems/command'
+require 'rubygems/version_option'
 
 class Gem::Commands::OpenCommand < Gem::Command
   include Gem::VersionOption

@@ -17,7 +17,7 @@ module Psych
 
       if defined?(Ractor)
         def dispatch
-          @dispatch_cache ||= (Ractor.current[:Psych_Visitors_Visitor] ||= Visitor.dispatch_cache)
+          Ractor.current[:Psych_Visitors_Visitor] ||= Visitor.dispatch_cache
         end
       else
         DISPATCH = dispatch_cache

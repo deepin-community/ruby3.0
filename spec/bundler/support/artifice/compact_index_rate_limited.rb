@@ -7,7 +7,7 @@ Artifice.deactivate
 class CompactIndexRateLimited < CompactIndexAPI
   class RequestCounter
     def self.queue
-      @queue ||= Thread::Queue.new
+      @queue ||= Queue.new
     end
 
     def self.size

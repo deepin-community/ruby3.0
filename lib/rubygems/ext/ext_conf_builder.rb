@@ -5,6 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'shellwords'
+
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd)
     require 'fileutils'
@@ -38,7 +40,6 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       begin
         # workaround for https://github.com/oracle/truffleruby/issues/2115
         siteconf_path = RUBY_ENGINE == "truffleruby" ? siteconf.path.dup : siteconf.path
-        require "shellwords"
         cmd = Gem.ruby.shellsplit << "-I" << File.expand_path("../../..", __FILE__) <<
               "-r" << get_relative_path(siteconf_path, extension_dir) << File.basename(extension)
         cmd.push(*args)

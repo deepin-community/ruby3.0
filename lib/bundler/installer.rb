@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "rubygems/dependency_installer"
 require_relative "worker"
 require_relative "installer/parallel_installer"
 require_relative "installer/standalone"

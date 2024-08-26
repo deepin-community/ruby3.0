@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'parser'
+require 'rubygems/request_set/lockfile/parser'
 
 class Gem::RequestSet::Lockfile::Tokenizer
   Token = Struct.new :type, :value, :column, :line

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require 'rubygems/test_case'
 
 class TestGemSourceFetchProblem < Gem::TestCase
   def test_exception
@@ -22,15 +22,5 @@ class TestGemSourceFetchProblem < Gem::TestCase
     sf = Gem::SourceFetchProblem.new source, error
 
     refute_match sf.wordy, 'secret'
-  end
-
-  def test_source_password_no_redacted
-    source = Gem::Source.new 'https://username:secret@gemsource.com'
-    error  = RuntimeError.new 'test'
-
-    sf = Gem::SourceFetchProblem.new source, error
-    sf.wordy
-
-    assert_match 'secret', source.uri.to_s
   end
 end

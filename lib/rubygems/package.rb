@@ -41,9 +41,9 @@
 # #files are the files in the .gem tar file, not the Ruby files in the gem
 # #extract_files and #contents automatically call #verify
 
-require_relative "../rubygems"
-require_relative 'security'
-require_relative 'user_interaction'
+require "rubygems"
+require 'rubygems/security'
+require 'rubygems/user_interaction'
 
 class Gem::Package
   include Gem::UserInteraction
@@ -68,13 +68,6 @@ class Gem::Package
     def initialize(destination, destination_dir)
       super "installing into parent path %s of %s is not allowed" %
               [destination, destination_dir]
-    end
-  end
-
-  class SymlinkError < Error
-    def initialize(name, destination, destination_dir)
-      super "installing symlink '%s' pointing to parent path %s of %s is not allowed" %
-              [name, destination, destination_dir]
     end
   end
 
@@ -407,20 +400,12 @@ EOM
   # extracted.
 
   def extract_tar_gz(io, destination_dir, pattern = "*") # :nodoc:
-    directories = []
+    directories = [] if dir_mode
     open_tar_gz io do |tar|
       tar.each do |entry|
         next unless File.fnmatch pattern, entry.full_name, File::FNM_DOTMATCH
 
         destination = install_location entry.full_name, destination_dir
-
-        if entry.symlink?
-          link_target = entry.header.linkname
-          real_destination = link_target.start_with?("/") ? link_target : File.expand_path(link_target, File.dirname(destination))
-
-          raise Gem::Package::SymlinkError.new(entry.full_name, real_destination, destination_dir) unless
-            normalize_path(real_destination).start_with? normalize_path(destination_dir + '/')
-        end
 
         FileUtils.rm_rf destination
 
@@ -432,11 +417,9 @@ EOM
           else
             File.dirname destination
           end
+        directories << mkdir if directories
 
-        unless directories.include?(mkdir)
-          FileUtils.mkdir_p mkdir, **mkdir_options
-          directories << mkdir
-        end
+        mkdir_p_safe mkdir, mkdir_options, destination_dir, entry.full_name
 
         File.open destination, 'wb' do |out|
           out.write entry.read
@@ -449,7 +432,8 @@ EOM
       end
     end
 
-    if dir_mode
+    if directories
+      directories.uniq!
       File.chmod(dir_mode, *directories)
     end
   end
@@ -482,11 +466,21 @@ EOM
     raise Gem::Package::PathError.new(filename, destination_dir) if
       filename.start_with? '/'
 
-    destination_dir = File.realpath(destination_dir)
-    destination = File.expand_path(filename, destination_dir)
+    destination_dir = File.expand_path(File.realpath(destination_dir))
+    destination = File.expand_path(File.join(destination_dir, filename))
 
     raise Gem::Package::PathError.new(destination, destination_dir) unless
-      normalize_path(destination).start_with? normalize_path(destination_dir + '/')
+      destination.start_with? destination_dir + '/'
+
+    begin
+      real_destination = File.expand_path(File.realpath(destination))
+    rescue
+      # it's fine if the destination doesn't exist, because rm -rf'ing it can't cause any damage
+      nil
+    else
+      raise Gem::Package::PathError.new(real_destination, destination_dir) unless
+        real_destination.start_with? destination_dir + '/'
+    end
 
     destination.tap(&Gem::UNTAINT)
     destination
@@ -497,6 +491,22 @@ EOM
       pathname.downcase
     else
       pathname
+    end
+  end
+
+  def mkdir_p_safe(mkdir, mkdir_options, destination_dir, file_name)
+    destination_dir = File.realpath(File.expand_path(destination_dir))
+    parts = mkdir.split(File::SEPARATOR)
+    parts.reduce do |path, basename|
+      path = File.realpath(path) unless path == ""
+      path = File.expand_path(path + File::SEPARATOR + basename)
+      lstat = File.lstat path rescue nil
+      if !lstat || !lstat.directory?
+        unless normalize_path(path).start_with? normalize_path(destination_dir) and (FileUtils.mkdir path, **mkdir_options rescue false)
+          raise Gem::Package::PathError.new(file_name, destination_dir)
+        end
+      end
+      path
     end
   end
 
@@ -692,12 +702,12 @@ EOM
   end
 end
 
-require_relative 'package/digest_io'
-require_relative 'package/source'
-require_relative 'package/file_source'
-require_relative 'package/io_source'
-require_relative 'package/old'
-require_relative 'package/tar_header'
-require_relative 'package/tar_reader'
-require_relative 'package/tar_reader/entry'
-require_relative 'package/tar_writer'
+require 'rubygems/package/digest_io'
+require 'rubygems/package/source'
+require 'rubygems/package/file_source'
+require 'rubygems/package/io_source'
+require 'rubygems/package/old'
+require 'rubygems/package/tar_header'
+require 'rubygems/package/tar_reader'
+require 'rubygems/package/tar_reader/entry'
+require 'rubygems/package/tar_writer'

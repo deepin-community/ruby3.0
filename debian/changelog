@@ -1,17 +1,115 @@
-ruby3.0 (3.0.3-1) unstable; urgency=medium
+ruby3.0 (3.0.2-7ubuntu2.7) jammy-security; urgency=medium
 
-  * New upstream version 3.0.3.  Includes fixes for the following security
-    issues (Closes: #1002995):
-    - CVE-2021-41816: Buffer Overrun in CGI.escape_html
-    - CVE-2021-41817: regular expression Denial of Service in Date.parse
-    - CVE-2021-41819: mishandling of security prefixes in CGI::Cookie.parse
-  * Refresh patches
-  * autopkgtest: builtin-extensions: check openssl version
-  * debian/libruby3.0.symbols: update
-  * Fix generation of Provides:
-  * Exclude some tests from TestGemServer
+  * SECURITY UPDATE: buffer over-read in StringIO
+    - debian/patches/CVE-2024-27280.patch: fix expanding size at
+      ungetc/ungetbyte in ext/stringio/stringio.c,
+      test/stringio/test_stringio.rb.
+    - CVE-2024-27280
 
- -- Antonio Terceiro <terceiro@debian.org>  Sun, 13 Mar 2022 21:02:08 -0300
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Wed, 19 Jun 2024 10:32:00 -0400
+
+ruby3.0 (3.0.2-7ubuntu2.6) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: code execution in RDoc
+    - debian/patches/CVE-2024-27281-1.patch: filter marshalled objects in
+      lib/rdoc/store.rb.
+    - debian/patches/CVE-2024-27281-2.patch: use safe_load and
+      safe_load_file for .rdoc_options in lib/rdoc/rdoc.rb,
+      test/rdoc/test_rdoc_options.rb.
+    - debian/patches/CVE-2024-27281-3.patch: fix NoMethodError for
+      start_with in lib/rdoc/store.rb.
+    - CVE-2024-27281
+  * SECURITY UPDATE: heap data extraction via regex
+    - debian/patches/CVE-2024-27282.patch: fix Use-After-Free issue for
+      Regexp in regexec.c.
+    - CVE-2024-27282
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Fri, 14 Jun 2024 08:02:18 -0400
+
+ruby3.0 (3.0.2-7ubuntu2.5) jammy; urgency=medium
+
+  * d/p/fix-ruby_xfree-segfault.patch: fix occasional segfault (LP: #2049197).
+  * Replace expired certificate in tests with upstream patch (LP: #2051380).
+    - d/p/renew-test-certificates-d3933fc753187a055a4904af82f5f3794c88c416.patch
+
+ -- Lucas Kanashiro <kanashiro@ubuntu.com>  Wed, 20 Mar 2024 17:50:02 -0300
+
+ruby3.0 (3.0.2-7ubuntu2.4) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: ReDoS
+    - debian/patches/CVE-2023-28755.patch: adds '+' once or more in specific
+      places of the  RFC3986 regex in order to avoid the increase in execution
+      time for parsing strings to URI objects in lib/uri/rfc3986_parser.rb.
+    - debian/patches/CVE-2023-28755-fix-test-uri-empty-host-again.patch:
+      fix test uri in lib/net/http/generic_request.rb.
+    - CVE-2023-28755
+  * SECURITY UPDATE: ReDoS
+    - debian/patches/CVE-2023-36617.patch: changes regex behaviour
+      in lib/url/rfc2396_parser.rb, lib/uri/rfc3986_parser.rb.
+    - CVE-2023-36617
+
+ -- Leonidas Da Silva Barbosa <leo.barbosa@canonical.com>  Fri, 07 Jul 2023 11:37:56 -0300
+
+ruby3.0 (3.0.2-7ubuntu2.3) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: HTTP response splitting
+    - debian/patches/CVE-2021-33621*.patch: adds regex to lib/cgi/core.rb and
+      lib/cgi/cookie.rb along with tests to check http response headers and
+      cookie fields for invalid characters.
+    - debian/patches/fix_tzdata-2022.patch: fix for tzdata-2022g tests
+      in test/ruby/test_time_tz.rb.
+    - CVE-2021-33621
+
+ -- Leonidas Da Silva Barbosa <leo.barbosa@canonical.com>  Wed, 18 Jan 2023 14:28:21 -0300
+
+ruby3.0 (3.0.2-7ubuntu2.2) jammy; urgency=medium
+
+  * d/p/fix-length-calc-for-Array#slice.patch: Add patch to
+    fix length calculation for Array#slice!. (LP: #1982703)
+
+ -- Utkarsh Gupta <utkarsh@ubuntu.com>  Mon, 14 Nov 2022 17:21:06 +0530
+
+ruby3.0 (3.0.2-7ubuntu2.1) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: Double free
+    - debian/patches/CVE-2022-28738.patch: just free compiled
+      pattern if no space is used in regcomp.c, test/ruby/test_regexp.rb.
+    - CVE-2022-28738
+  * SECURITY UPDATE: Buffer over-read
+    - debian/patches/CVE-2022-28739.patch: fix dtoa buffer
+      overrun in missing/dtoa.c, test/ruby/test_float.rb.
+    - CVE-2022-28739
+
+ -- Leonidas Da Silva Barbosa <leo.barbosa@canonical.com>  Tue, 24 May 2022 16:36:26 -0300
+
+ruby3.0 (3.0.2-7ubuntu2) jammy; urgency=medium
+
+  * SECURITY UPDATE: Buffer overrun
+    - debian/patches/CVE-2021-41816.patch: fix integer overflow making
+      sure use of the check in rb_alloc_tmp_buffer2 in
+      ext/cgi/escape/escape.c.
+    - CVE-2021-41816
+  * SECURITY UPDATE: ReDoS vulnerability
+    - debian/patches/CVE-2021-41817-*.patch: add length limit option
+      for methods that parses date strings and mimic prev behaviour
+      in  ext/date/date_core.c, test/date/test_date_parse.rb.
+    - CVE-2021-41817
+  * SECURITY UPDATE: Mishandles sec prefixes in cookie names
+    - debian/patches/CVE-2021-41819.patch: when parsing cookies, only
+      decode the values in lib/cgi/cookie.rb, test/cgi/test_cgi_cookie.rb.
+    - CVE-2021-41819
+
+ -- Leonidas Da Silva Barbosa <leo.barbosa@canonical.com>  Thu, 17 Mar 2022 13:09:20 -0300
+
+ruby3.0 (3.0.2-7ubuntu1) jammy; urgency=medium
+
+  * d/{genprovides,rules}: fix generation of Provides (LP: #1964813).
+    With ruby3.0 gems are provided both under
+    /usr/lib/ruby/gems/3.0.0/specifications/default/ and at the superior
+    directory, /usr/lib/ruby/gems/3.0.0/specifications/. Change to catch all
+    gemspecs under /usr/lib/ruby/gems/3.0.0/specifications/ instead.
+
+ -- Lucas Kanashiro <kanashiro@ubuntu.com>  Mon, 14 Mar 2022 15:11:38 -0300
 
 ruby3.0 (3.0.2-7) unstable; urgency=medium
 

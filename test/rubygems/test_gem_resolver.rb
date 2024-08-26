@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require 'rubygems/test_case'
 
 class TestGemResolver < Gem::TestCase
   def setup
@@ -266,14 +266,14 @@ class TestGemResolver < Gem::TestCase
 
     res = Gem::Resolver.new [a_dep], Gem::Resolver::IndexSet.new
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::UnsatisfiableDepedencyError do
       res.resolve
     end
 
     refute_empty e.errors
   end
 
-  def test_no_overlap_specifically
+  def test_no_overlap_specificly
     a = util_spec "a", '1'
     b = util_spec "b", "1"
 
@@ -469,7 +469,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set)
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::UnsatisfiableDepedencyError do
       r.resolve
     end
 
@@ -486,7 +486,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::UnsatisfiableDepedencyError do
       r.resolve
     end
 
@@ -499,7 +499,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::UnsatisfiableDepedencyError do
       r.resolve
     end
 
@@ -516,7 +516,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::UnsatisfiableDepedencyError do
       r.resolve
     end
 
@@ -781,7 +781,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::UnsatisfiableDepedencyError do
       r.resolve
     end
 
