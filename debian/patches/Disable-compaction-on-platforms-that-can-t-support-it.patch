@@ -1,0 +1,223 @@
+From: Aaron Patterson <tenderlove@ruby-lang.org>
+Date: Tue, 26 Apr 2022 18:00:54 -0300
+Subject: Disable compaction on platforms that can't support it
+
+Manual compaction also requires a read barrier, so we need to disable
+even manual compaction on platforms that don't support mprotect.
+
+[Bug #17871]
+
+Backported-by: Antonio Terceiro <terceiro@debian.org>
+
+Also need to backport the following from ruby3.1:
+
+- gc.c: definition of USE_MMAP_ALIGNED_ALLOC
+- gc.c: intialization of use_mmap_aligned_alloc in Init_heap
+- gc.c: check for USE_MMAP_ALIGNED_ALLOC in gc_start_internal
+- gc.c: check for USE_MMAP_ALIGNED_ALLOC in gc_set_auto_compact
+- configure.ac: check for mmap, i.e. the definition of HAVE_MMAP
+- configure.ac: definition of HAVE_CONST_PAGE_SIZE
+
+Notes:
+    Merged: https://github.com/ruby/ruby/pull/4528
+---
+ configure.ac                 | 16 +++++++++++++
+ gc.c                         | 56 +++++++++++++++++++++++++++++++-------------
+ test/ruby/test_gc_compact.rb | 41 ++++++++++++++++++++------------
+ 3 files changed, 82 insertions(+), 31 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 5fb8282..d807098 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1944,6 +1944,7 @@ AC_CHECK_FUNCS(memmem)
+ AC_CHECK_FUNCS(mkfifo)
+ AC_CHECK_FUNCS(mknod)
+ AC_CHECK_FUNCS(mktime)
++AC_CHECK_FUNCS(mmap)
+ AC_CHECK_FUNCS(openat)
+ AC_CHECK_FUNCS(pipe2)
+ AC_CHECK_FUNCS(poll)
+@@ -2671,6 +2672,21 @@ main(int argc, char *argv[])
+ ])
+ }
+ 
++AC_CHECK_HEADERS([sys/user.h])
++AS_IF([test "x$ac_cv_func_mmap" = xyes], [
++    AC_CACHE_CHECK([whether PAGE_SIZE is compile-time const], rb_cv_const_page_size,
++       [malloc_headers=`sed -n '/MALLOC_HEADERS_BEGIN/,/MALLOC_HEADERS_END/p' ${srcdir}/gc.c`
++       AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$malloc_headers
++            typedef char conftest_page[PAGE_SIZE];
++        ]], [[]])],
++        [rb_cv_const_page_size=yes],
++        [rb_cv_const_page_size=no])])
++])
++AS_IF([test "x$rb_cv_const_page_size" = xyes],
++    [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 1)],
++    [AC_DEFINE(HAVE_CONST_PAGE_SIZE, 0)]
++)
++
+ : "runtime section" && {
+ dnl wheather use dln_a_out or not
+ AC_ARG_WITH(dln-a-out,
+diff --git a/gc.c b/gc.c
+index 5d0c342..c6dba28 100644
+--- a/gc.c
++++ b/gc.c
+@@ -822,6 +822,23 @@ enum {
+     HEAP_PAGE_BITMAP_PLANES = 4 /* RGENGC: mark, unprotected, uncollectible, marking */
+ };
+ 
++#ifdef HAVE_MMAP
++# if HAVE_CONST_PAGE_SIZE
++/* If we have the HEAP_PAGE and it is a constant, then we can directly use it. */
++static const bool USE_MMAP_ALIGNED_ALLOC = (PAGE_SIZE <= HEAP_PAGE_SIZE);
++# elif defined(PAGE_MAX_SIZE) && (PAGE_MAX_SIZE <= HEAP_PAGE_SIZE)
++/* PAGE_SIZE <= HEAP_PAGE_SIZE */
++static const bool USE_MMAP_ALIGNED_ALLOC = true;
++# else
++/* Otherwise, fall back to determining if we can use mmap during runtime. */
++#  define USE_MMAP_ALIGNED_ALLOC (use_mmap_aligned_alloc != false)
++
++static bool use_mmap_aligned_alloc;
++# endif
++#elif !defined(__MINGW32__) && !defined(_WIN32)
++static const bool USE_MMAP_ALIGNED_ALLOC = false;
++#endif
++
+ struct heap_page {
+     short total_slots;
+     short free_slots;
+@@ -3159,15 +3176,18 @@ Init_heap(void)
+ {
+     rb_objspace_t *objspace = &rb_objspace;
+ 
+-#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+-    /* If Ruby's heap pages are not a multiple of the system page size, we
+-     * cannot use mprotect for the read barrier, so we must disable automatic
+-     * compaction. */
+-    int pagesize;
+-    pagesize = (int)sysconf(_SC_PAGE_SIZE);
+-    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
+-        ruby_enable_autocompact = 0;
+-    }
++#if defined(HAVE_MMAP) && !HAVE_CONST_PAGE_SIZE && !defined(PAGE_MAX_SIZE)
++    /* Need to determine if we can use mmap at runtime. */
++# ifdef PAGE_SIZE
++    /* If the PAGE_SIZE macro can be used. */
++    use_mmap_aligned_alloc = PAGE_SIZE <= HEAP_PAGE_SIZE;
++# elif defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
++    /* If we can use sysconf to determine the page size. */
++    use_mmap_aligned_alloc = sysconf(_SC_PAGE_SIZE) <= HEAP_PAGE_SIZE;
++# else
++    /* Otherwise we can't determine the system page size, so don't use mmap. */
++    use_mmap_aligned_alloc = FALSE;
++# endif
+ #endif
+ 
+     objspace->next_object_id = INT2FIX(OBJ_ID_INITIAL);
+@@ -8533,6 +8553,12 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
+ 
+     /* For now, compact implies full mark / sweep, so ignore other flags */
+     if (RTEST(compact)) {
++#if !defined(__MINGW32__) && !defined(_WIN32)
++        if (!USE_MMAP_ALIGNED_ALLOC) {
++            rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
++        }
++#endif
++
+         reason |= GPR_FLAG_COMPACT;
+     } else {
+         if (!RTEST(full_mark))       reason &= ~GPR_FLAG_FULL_MARK;
+@@ -9944,16 +9970,14 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
+ static VALUE
+ gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
+ {
+-#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+-    /* If Ruby's heap pages are not a multiple of the system page size, we
+-     * cannot use mprotect for the read barrier, so we must disable automatic
+-     * compaction. */
+-    int pagesize;
+-    pagesize = (int)sysconf(_SC_PAGE_SIZE);
+-    if ((HEAP_PAGE_SIZE % pagesize) != 0) {
++    /* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
++     * the read barrier, so we must disable automatic compaction. */
++#if !defined(__MINGW32__) && !defined(_WIN32)
++    if (!USE_MMAP_ALIGNED_ALLOC) {
+         rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
+     }
+ #endif
++
+     ruby_enable_autocompact = RTEST(v);
+     return v;
+ }
+diff --git a/test/ruby/test_gc_compact.rb b/test/ruby/test_gc_compact.rb
+index 4a8cff3..f5cab55 100644
+--- a/test/ruby/test_gc_compact.rb
++++ b/test/ruby/test_gc_compact.rb
+@@ -4,12 +4,32 @@ require 'fiddle'
+ require 'etc'
+ 
+ class TestGCCompact < Test::Unit::TestCase
+-  class AutoCompact < Test::Unit::TestCase
++  module SupportsCompact
+     def setup
+       skip "autocompact not supported on this platform" unless supports_auto_compact?
+       super
+     end
+ 
++    private
++
++    def supports_auto_compact?
++      return true unless defined?(Etc::SC_PAGE_SIZE)
++
++      begin
++        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
++      rescue NotImplementedError
++      rescue ArgumentError
++      end
++
++      true
++    end
++  end
++
++  include SupportsCompact
++
++  class AutoCompact < Test::Unit::TestCase
++    include SupportsCompact
++
+     def test_enable_autocompact
+       before = GC.auto_compact
+       GC.auto_compact = true
+@@ -59,26 +79,17 @@ class TestGCCompact < Test::Unit::TestCase
+     ensure
+       GC.auto_compact = before
+     end
+-
+-    private
+-
+-    def supports_auto_compact?
+-      return true unless defined?(Etc::SC_PAGE_SIZE)
+-
+-      begin
+-        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
+-      rescue NotImplementedError
+-      rescue ArgumentError
+-      end
+-
+-      true
+-    end
+   end
+ 
+   def os_page_size
+     return true unless defined?(Etc::SC_PAGE_SIZE)
+   end
+ 
++  def setup
++    skip "autocompact not supported on this platform" unless supports_auto_compact?
++    super
++  end
++
+   def test_gc_compact_stats
+     list = []
+ 

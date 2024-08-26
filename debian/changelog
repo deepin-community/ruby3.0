@@ -1,3 +1,81 @@
+ruby3.0 (3.0.4-8) unstable; urgency=medium
+
+  [ Vagrant Cascadian ]
+  * debian/rules: ensure rbconfig.rb is reproducible regardless of usr-merge
+    (Closes: #1006471)
+  * debian/rules: Strip the build path from rbconfig.rb (Closes: #1006476)
+
+  [ Antonio Terceiro ]
+  * libruby3.0: depend on packages that used to be provided by ruby2.7.
+    This allows *ruby2.7 to be removed after upgrades from bullseye where
+    the user has installed packages that depend on either ruby-webrick or
+    ruby-sdbm.
+  * rbconfig, mkmf: call foreign pkg-config when cross compiling
+    (Closes: #1018230)
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 10 Sep 2022 23:02:54 -0300
+
+ruby3.0 (3.0.4-7) unstable; urgency=medium
+
+  * Complete the patch to disable compaction on architectures where it can't work.
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sun, 01 May 2022 09:56:20 -0300
+
+ruby3.0 (3.0.4-6) unstable; urgency=medium
+
+  * Exclude TestGCCompact on s390x
+
+ -- Antonio Terceiro <terceiro@debian.org>  Thu, 28 Apr 2022 10:56:40 -0300
+
+ruby3.0 (3.0.4-5) unstable; urgency=medium
+
+  * Fix disabling compaction on platforms that can't support it.
+    The initial patch was incomplete, and actually broke every other
+    architecture that was not ppc64el.
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 27 Apr 2022 15:15:03 -0300
+
+ruby3.0 (3.0.4-4) unstable; urgency=medium
+
+  * Disable GC compaction on platforms that can't support it.
+    This should fix some crashes hapenning on ppc64el
+
+ -- Antonio Terceiro <terceiro@debian.org>  Wed, 27 Apr 2022 12:55:10 -0300
+
+ruby3.0 (3.0.4-3) unstable; urgency=medium
+
+  * ppc64el: exclude TestGCCompact tests as they segfault
+
+ -- Antonio Terceiro <terceiro@debian.org>  Sat, 23 Apr 2022 08:31:14 -0300
+
+ruby3.0 (3.0.4-2) unstable; urgency=medium
+
+  * Exclude test TestGemInstaller#test_ensure_no_race_conditions_between_installing_and_loading_gemspecs
+
+ -- Antonio Terceiro <terceiro@debian.org>  Fri, 22 Apr 2022 09:58:51 -0300
+
+ruby3.0 (3.0.4-1) unstable; urgency=medium
+
+  [ John Paul Adrian Glaubitz ]
+  * Disable some tests on powerpc (Closes: #999349)
+  * Disable some tests on alpha (Closes: #999444)
+  * Fix filenames for glibc SO files on alpha and ia64
+    (Closes: #1007925)
+
+  [ Antonio Terceiro ]
+  * New upstream version 3.0.4
+  * Includes fixes for the following security issues:
+    - CVE-2022-28739: Buffer overrun in String-to-Float conversion
+      (Closes: #1009956)
+    - CVE-2022-28738: Double free in Regexp compilation
+      (Closes: #1009958)
+  * Refresh patches.
+    The fix in rand_init-fix-off-by-one-error.patch has been done upstream
+    differently; drop the patch.
+  * TestZlibGzipFile: skip test unsupported on overlay filesystems
+
+ -- Antonio Terceiro <terceiro@debian.org>  Thu, 21 Apr 2022 13:52:50 -0300
+
 ruby3.0 (3.0.3-1) unstable; urgency=medium
 
   * New upstream version 3.0.3.  Includes fixes for the following security
